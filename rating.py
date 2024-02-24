@@ -2,6 +2,10 @@ import os
 import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+import random
+
+"""balder erling 0 1 (1187.213839294489, 0.0, 1) (1189.9918284180133, 1.0, 1) 2024-02-23T21:27:43.382175
+"""
 
 RATING_FILE = "ratings.txt"
 HISTORY_FILE = "history.txt"
@@ -55,7 +59,7 @@ def get_player(player_list):
     while True:
         print("Please enter the number of the player")
         for idx, player in enumerate(player_list):
-            print(f"{idx+1}: {player}")
+            print(f"{idx+1}: {player.capitalize()}")
 
         print(f"{len(player_list)+1}: Cancel")
         
@@ -124,13 +128,19 @@ def register_game(scores: dict):
     scores[white] = (R_A + ELO_K * (S_A - E_A), score_A + S_A, n_played_A + 1)
     scores[black] = (R_B + ELO_K * (S_B - E_B), score_B + S_B, n_played_B + 1)
 
-    with open(HISTORY_FILE, "w+") as f:
+    with open(HISTORY_FILE + "backup", "w") as f:
+        f.write(open(HISTORY_FILE).read())
+
+    with open(HISTORY_FILE, "a") as f:
         t = datetime.datetime.now().isoformat()
         f.write(f"{white} {black} {S_A} {S_B} {scores[white]} {scores[black]} {t}\n")
 
 def stats(scores: dict):
     players = list(scores.keys())
     player = get_player(players)
+
+    if player is None:
+        return
 
     n_white = 0
     n_black = 0
@@ -140,28 +150,57 @@ def stats(scores: dict):
 
     with open(HISTORY_FILE, "r") as f:
         for line in f.readlines():
-            st = line.replace("(", "").replace(")", "")
-            white, black, sa, ta, na, sb, tb, nb, score_wh, score_bl, t = st.split()
+            st = line.replace("(", "").replace(")", "").replace(",", "")
+            white, black, ra, rb, sa, ta, na, sb, tb, nb, t = st.split()
 
             if white != player and black != player:
                 continue
 
+            print(player)
             if white == player:
-                score_hist.append(float(score_wh))
+                score_hist.append(float(sa))
             else:
-                score_hist.append(float(score_bl))
+                score_hist.append(float(sb))
 
             times.append(datetime.datetime.fromisoformat(t).timestamp())
-
-    plt.plot(times, score_hist)
-    plt.suptitle("")
+    fig, ax = plt.subplots(figsize = (8, 6), facecolor = "teal")
+    if player[-1] != "s":
+        ax.plot(times, score_hist,
+                color = "magenta",
+                label = f"{player.capitalize()}s ELO-rating over time")
+    else:
+        ax.plot(times, score_hist,
+                color = "magenta",
+                label = f"{player.capitalize()}' ELO-rating over time")
+    ax.set_ylabel("ELO")
+    ax.set_xlabel("time (seconds since January 1st 1970)")
+    ax.axhline(1200, color = "purple", label = "Start rating: 1200", linestyle = "dashed")
+    ax.legend(loc = "upper left", fontsize = 12, framealpha = 0.1)
+    fig.suptitle(f"Scoren til {player.capitalize()}", fontweight = "bold")
     plt.show()
 
+def clear_tournament(scores):
+    if input("Are you sure you want to clear? ") != "y":
+        return
+    for player in scores:
+        a, b, c = scores[player]
+        scores[player] = (a, 0, 0)
 
+def print_next_game(scores):
+    players = list(scores.keys())
+    players.sort(key = lambda t: (t != "jesper", -scores[t][2], random.randint(0, 100)))
+    a, b = players[-2:]
+    if random.randint(0, 1) == 1:
+        a, b = b, a
+
+    print(f" ==== Next players ==== ")
+    print(f"  White: {a}")
+    print(f"  Black: {b}")
+    input("Ok? > ")
 
 if __name__ == "__main__":
     while True:
-        #os.system("clear")
+        os.system("clear")
         scores = load_scores()
         print("--------------- CURRENT SCORES ---------------")
         print_scores(scores)
@@ -171,6 +210,8 @@ if __name__ == "__main__":
         print("1. Add player")
         print("2. Register game")
         print("3. Stats")
+        print("4. Reset tournament")
+        print("5. Get next game")
         print("q. Exit")
 
         ans = input("> ").lower()
@@ -181,6 +222,10 @@ if __name__ == "__main__":
             register_game(scores)
         elif ans[0] == "3":
             stats(scores)
+        elif ans[0] == "4":
+            clear_tournament(scores)
+        elif ans[0] == "5":
+            print_next_game(scores)
         elif ans[0] == "q":
             exit(0)
 

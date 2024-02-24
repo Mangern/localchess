@@ -3,8 +3,8 @@ var playing = false;
 var clocks = [];
 
 var time_left = [
-    5 * 1000, // ms
-    5 * 1000 // ms
+    3 * 60 * 1000, // ms
+    3 * 60 * 1000 // ms
 ];
 
 var prev_time = -1;

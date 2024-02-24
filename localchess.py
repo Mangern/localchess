@@ -1,20 +1,15 @@
-
 from dataclasses import dataclass
+from database import Database
 
-@dataclass
-class Player:
-    id: int
-    name: str
+from game import GameTable, Game
+from player import PlayerTable, Player
+
 
 class LocalChess:
     def __init__(self):
-        self.players = [
-            Player(0, "Alan"), 
-            Player(1, "Donald"), 
-            Player(2, "Brian"),
-            Player(3, "Edgar"),
-            Player(4, "Dennis"),
-        ]
+        self.db = Database()
+        self.player_table = PlayerTable(self.db)
+        self.game_table = GameTable(self.db)
 
     def dictify(self, data: list|dict|Player):
         if type(data) == list:
@@ -22,12 +17,14 @@ class LocalChess:
         elif type(data) == dict:
             return {k: self.dictify(v) for k, v in data.items()}
         elif type(data) == Player:
-            return data.__dict__
+            return data.to_dict()
+        elif type(data) == Game:
+            return data.to_dict()
         else:
             assert False, "Exhaustive implementation of types in dictify"
 
     def get_players(self):
-        return self.dictify(self.players)
+        return self.dictify(self.player_table.get_all())
 
     def register_result(self, white_id, black_id, result_str):
         print(white_id, black_id, result_str)
