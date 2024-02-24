@@ -2,6 +2,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import sqlite3
 import socket
 import os
+import json
+
+from localchess import LocalChess
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -12,6 +15,8 @@ def get_local_ip():
 
 HOST_NAME = get_local_ip()
 PORT = 6969
+
+data_manager = LocalChess()
 
 
 class ChessServer(BaseHTTPRequestHandler):
@@ -52,12 +57,18 @@ class ChessServer(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-    def send_text(self, s):
+    def send_text(self, s: str):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-        self.wfile.write(bytes(s))
+        self.wfile.write(s.encode("utf-8"))
 
+    def send_json_response(self, data):
+        data_bytes = json.dumps(data).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(data_bytes)
 
     def do_GET(self):
 
@@ -75,7 +86,10 @@ class ChessServer(BaseHTTPRequestHandler):
             return self.send_css_response("html/host/script.js")
 
         elif self.path == "/html/mobile/style.css":
-            return self.send_js_response("html/mobile/style.css")
+            return self.send_css_response("html/mobile/style.css")
+
+        elif self.path == "/clock":
+            return self.send_html_response("html/clock/clock.html")
 
         elif self.path == "/html/clock/style.css":
             return self.send_css_response("html/clock/style.css")
@@ -83,11 +97,34 @@ class ChessServer(BaseHTTPRequestHandler):
         elif self.path == "/html/clock/script.js":
             return self.send_js_response("html/clock/script.js")
 
-        elif self.path == "/clock":
-            return self.send_html_response("html/clock/clock.html")
+        elif self.path == "/html/common/utils.js":
+            return self.send_js_response("html/common/utils.js")
+
+        elif self.path == "/favicon.ico":
+            self.send_response(200)
+            with open("favicon.ico", "rb") as f:
+                self.wfile.write(f.read())
+
         else:
             return self.send_404()
 
+    def do_POST(self):
+        if self.path == "/players":
+            return self.send_json_response(data_manager.get_players())
+        elif self.path == "/register_result":
+            try:
+                content_length = int(self.headers.get("Content-Length")) #pyright: ignore
+                body_bytes = self.rfile.read(content_length)
+                json_body = json.loads(body_bytes)
+                data_manager.register_result(
+                    json_body["white"],
+                    json_body["black"],
+                    json_body["result"]
+                )
+                self.send_response(200)
+            except:
+                self.send_response(400) # Bad request
+        return self.send_404()
 
 if __name__ == "__main__":
     chess_server = HTTPServer((HOST_NAME, PORT), ChessServer)

@@ -16,6 +16,39 @@ body {
     padding: 2px;
 }
 
+.status_container {
+    flex: 2;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    justify-content: space-between;
+    padding-left: 5px;
+    padding-right: 5px;
+    width: calc(100% - 10px);
+}
+
+.status_container > .left {
+    margin-bottom: 2rem;
+}
+
+.status_container > .right {
+    margin-top: 2rem;
+}
+
+.flag_btn {
+    background: none;
+    border: 1px solid #777;
+    border-radius: 2px;
+    font-size: 1.5rem;
+    width: 3rem;
+    height: 3rem;
+    color: #fefefe;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 .clock {
     border: 1px solid black;
     background-color: flex;
@@ -25,9 +58,40 @@ body {
     text-align: center;
     align-items: center;
     display: flex;
+    flex-direction: row;
+    justify-content: space-evenly; 
+}
+
+.clock.playing {
+    font-size: 4rem;
+}
+
+.player_select {
+    border: 1px solid black;
+    height: 100%;
+    flex: 1;
+    display: flex;
     flex-direction: column;
     justify-content: center;
-    font-size: 4rem;
+    user-select: none;
+}
+
+#clock_one > .player_select {
+    background-color: #ddd;
+    color: #111;
+}
+
+.result_white {
+    background-color: #ddd;
+    color: #111;
+}
+
+.result_remis {
+    background-color: #555;
+}
+
+.result_cancel {
+    background-color: #433333;
 }
 
 .clock.current {
@@ -36,5 +100,43 @@ body {
 }
 
 .clock.flagged {
-    background-color: #aa1212;
+    background-color: #991212;
+}
+
+.dialog {
+    position: absolute;
+    width: calc(100vw - 4rem);
+    height: calc(100vh - 10rem);
+    top: 5rem;
+    left: 2rem;
+    background-color: rgb(61,61,61);
+    border: 1px solid #777;
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    z-index: 1;
+}
+
+.dialog_title {
+    flex: 2;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-decoration: underline;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.dialog_button {
+    flex: 5;
+    width: calc(100% - 4rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ccc;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
