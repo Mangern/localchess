@@ -37,7 +37,7 @@ def save_scores(scores):
             f.write(f"{player}:{' '.join(map(str, scores[player]))}\n")
 
 
-def print_scores(scores: dict[str, float]):
+def print_scores(scores: dict[str, tuple[float,float,float]]):
     print("Spiller      ELO    Turnering   Antall partier")
     for player, tup in sorted(scores.items(), key = lambda tup: (tup[1][1], tup[1][0], tup[1][2]), reverse=True):
         elo, tour, n_played = tup

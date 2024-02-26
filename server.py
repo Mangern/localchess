@@ -3,8 +3,10 @@ import sqlite3
 import socket
 import os
 import json
+from database import Database
 
 from localchess import LocalChess
+from player import PlayerTable
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -97,6 +99,12 @@ class ChessServer(BaseHTTPRequestHandler):
         elif self.path == "/html/clock/script.js":
             return self.send_js_response("html/clock/script.js")
 
+        elif self.path == "/html/common/style.css":
+            return self.send_css_response("html/common/style.css")
+
+        elif self.path == "/html/common/api.js":
+            return self.send_js_response("html/common/api.js")
+        
         elif self.path == "/html/common/utils.js":
             return self.send_js_response("html/common/utils.js")
 
@@ -109,21 +117,22 @@ class ChessServer(BaseHTTPRequestHandler):
             return self.send_404()
 
     def do_POST(self):
-        if self.path == "/players":
+        if self.path == "/content_change":
+            return self.send_text(str(data_manager.content_did_change()));
+        elif self.path == "/game_state":
+            return self.send_json_response(data_manager.get_full_game_state())
+        elif self.path == "/players":
             return self.send_json_response(data_manager.get_players())
         elif self.path == "/register_result":
-            try:
-                content_length = int(self.headers.get("Content-Length")) #pyright: ignore
-                body_bytes = self.rfile.read(content_length)
-                json_body = json.loads(body_bytes)
-                data_manager.register_result(
-                    json_body["white"],
-                    json_body["black"],
-                    json_body["result"]
-                )
-                self.send_response(200)
-            except:
-                self.send_response(400) # Bad request
+            content_length = int(self.headers.get("Content-Length")) #pyright: ignore
+            body_bytes = self.rfile.read(content_length)
+            json_body = json.loads(body_bytes)
+            data_manager.register_result(
+                json_body["white"],
+                json_body["black"],
+                json_body["result"]
+            )
+            self.send_response(200)
         return self.send_404()
 
 if __name__ == "__main__":
