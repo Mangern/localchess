@@ -1,6 +1,7 @@
 import os
 import datetime
 import matplotlib.pyplot as plt
+import numpy as np
 import random
 
 """balder erling 0 1 (1187.213839294489, 0.0, 1) (1189.9918284180133, 1.0, 1) 2024-02-23T21:27:43.382175
@@ -144,8 +145,11 @@ def stats(scores: dict):
     n_white = 0
     n_black = 0
 
-    score_hist = []
+    #To-do: fix bug - stats doesn't show for all players
+
+    score_hist = [1200]
     times = []
+    game_num = [0]
 
     with open(HISTORY_FILE, "r") as f:
         for line in f.readlines():
@@ -155,27 +159,39 @@ def stats(scores: dict):
             if white != player and black != player:
                 continue
 
-            print(player)
+            
             if white == player:
                 score_hist.append(float(sa))
             else:
                 score_hist.append(float(sb))
 
             times.append(datetime.datetime.fromisoformat(t).timestamp())
-    fig, ax = plt.subplots(figsize = (8, 6), facecolor = "teal")
+            game_num.append(game_num[-1] + 1)
+
+    fig, ax = plt.subplots(figsize = (8, 6), facecolor = "lightslategray")
     if player[-1] != "s":
-        ax.plot(times, score_hist,
-                color = "magenta",
+        ax.plot(game_num, score_hist,
+                color = "blue",
                 label = f"{player.capitalize()}s ELO-rating over time")
     else:
-        ax.plot(times, score_hist,
-                color = "magenta",
+        ax.plot(game_num, score_hist,
+                color = "blue",
                 label = f"{player.capitalize()}' ELO-rating over time")
     ax.set_ylabel("ELO")
-    ax.set_xlabel("time (seconds since January 1st 1970)")
-    ax.axhline(1200, color = "purple", label = "Start rating: 1200", linestyle = "dashed")
-    ax.legend(loc = "upper left", fontsize = 12, framealpha = 0.1)
-    fig.suptitle(f"Scoren til {player.capitalize()}", fontweight = "bold")
+    #ax.set_xlabel("time (seconds since January 1st 1970)")
+    ax.set_xlabel("~Games played") #ca
+    ax.axhline(1200, color = "red", label = "Start rating: 1200", linestyle = "dashed", zorder = 0)
+    
+    ax.scatter(game_num[np.argmax(score_hist)], np.max(score_hist), 
+               label = f'Peak rating: {np.max(score_hist):.0f}', zorder = 3,
+               marker = '*', color = 'green')
+    current_ELO = score_hist[-1]
+    ax.scatter(game_num[score_hist.index(current_ELO)], current_ELO, 
+               label = f"Current ELO: {current_ELO:.0f}", marker = "+", zorder = 2,
+               color = "orange", )
+    
+    ax.legend(fontsize = 12, framealpha = 0.1)
+    fig.suptitle(f"ELO-rating for {player.capitalize()}", fontweight = "bold")
     plt.show()
 
 def clear_tournament(scores):
