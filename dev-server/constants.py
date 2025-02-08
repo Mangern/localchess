@@ -1,0 +1,2 @@
+ELO_K = 24
+DEFAULT_ELO = 1200.0
