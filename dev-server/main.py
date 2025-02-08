@@ -76,6 +76,8 @@ def post(player_white: int, player_black: int, result: int, add_to_active: bool 
     return Redirect("/")
 
 import matplotlib.pyplot as plt
+import numpy as np
+
 @rt("/stats/{player_id}")
 def get(player_id: int):
     player = localchess.player_table[player_id]
@@ -86,15 +88,28 @@ def get(player_id: int):
 
     score_hist, times = zip(*elo_hist)
 
+    game_num = list(range(len(score_hist)))
+
     fig, ax = plt.subplots(figsize = (8, 6), facecolor = "teal")
-    ax.plot(times, score_hist,
+    ax.plot(game_num, score_hist,
             color = "magenta",
             label = f"{player.name.capitalize()}' ELO-rating over time")
     ax.set_ylabel("ELO")
-    ax.set_xlabel("time (seconds since January 1st 1970)")
-    ax.axhline(DEFAULT_ELO, color = "purple", label = f"Start rating: {DEFAULT_ELO}", linestyle = "dashed")
-    ax.legend(loc = "upper left", fontsize = 12, framealpha = 0.1)
-    fig.suptitle(f"Scoren til {player.name.capitalize()}", fontweight = "bold")
+    #ax.set_xlabel("time (seconds since January 1st 1970)")
+    ax.set_xlabel("# Games played") #ca
+    ax.axhline(1200, color = "red", label = "Start rating: 1200", linestyle = "dashed", zorder = 0)
+    
+    ax.scatter(game_num[np.argmax(score_hist)], np.max(score_hist), 
+               label = f'Peak rating: {np.max(score_hist):.0f}', zorder = 3,
+               marker = '*', color = 'green')
+    current_ELO = score_hist[-1]
+    ax.scatter(game_num[score_hist.index(current_ELO)], current_ELO, 
+               label = f"Current ELO: {current_ELO:.0f}", marker = "+", zorder = 2,
+               color = "orange", )
+    
+    ax.legend(fontsize = 12, framealpha = 0.1)
+    fig.suptitle(f"ELO-rating for {player.name.capitalize()}", fontweight = "bold")
+
     plt.savefig("tmp.svg")
     with open("tmp.svg") as f:
         svg_txt = f.read()
