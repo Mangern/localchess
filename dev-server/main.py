@@ -1,4 +1,5 @@
 import os
+from threading import local
 from time import time
 from fasthtml.common import Button, CheckboxX, Fieldset, Input, Label, Main, NotStr, Option, Redirect, Script, Select, Style, fast_app, Div, P, picolink, serve, H1, A, Form, H2
 from dataclasses import dataclass
@@ -66,14 +67,14 @@ def post(username: str):
     return Redirect("/")
 
 @rt("/register_game")
-def post(player_white: int, player_black: int, result: int, add_to_active: bool = False):
+def post(player_white: int, player_black: int, result: int, add_to_active: bool = False, redir_to: str = ""):
     if player_white == player_black:
-        return Redirect("/?error=You+cannot+play+yourself")
+        return Redirect(f"/{redir_to}?error=You+cannot+play+yourself")
     if result not in [-1, 0, 1]:
-        return Redirect("/?error=Invalid+request")
+        return Redirect(f"/{redir_to}?error=Invalid+request")
     if not localchess.register_game(player_white, player_black, result, add_to_active):
-        return Redirect("/?error=Failed+to+register+game")
-    return Redirect("/")
+        return Redirect(f"/{redir_to}?error=Failed+to+register+game")
+    return Redirect(f"/{redir_to}")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -123,9 +124,37 @@ def post(tournament_name: str):
     localchess.tournament_table.start_tournament(tournament_name)
     return Redirect("/")
 
+@rt("/tournament_end")
+def post():
+    localchess.tournament_table.end_active_tournament()
+    return Redirect("/")
+
 @rt("/tournament")
 def get():
-    return H1("Tournament")
+    active_tournament = localchess.tournament_table.get_active()
+    if active_tournament is None:
+        return Redirect("/")
+    return Main(
+        H1(f"{active_tournament.name}"),
+        localchess.active_tournament_scoreboard(),
+        Form(
+            Fieldset(
+                localchess.player_select("player_white"),
+                localchess.player_select("player_black"),
+                Select(Option("White won", value=1), Option("Black won", value=-1), Option("Remis", value="0"), name="result"),
+                Button("Register game"),
+                Input(name="add_to_active", value="1", style="visibility: hidden;"),
+                Input(name="redir_to", value="tournament", style="visibility: hidden;")
+            ),
+            action="/register_game", method="post",
+            cls="row"
+        ),
+        NotStr("<br>"),
+        Form(
+            Button("End tournament"),
+            action="/tournament_end", method="post"
+        )
+    )
 
 if __name__ == "__main__":
     serve()

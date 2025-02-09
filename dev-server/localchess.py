@@ -1,5 +1,5 @@
 from datetime import datetime
-from fasthtml.common import A, Div, Option, Select, Table, Td, Tr
+from fasthtml.common import A, Div, Option, Select, Table, Td, Tr, H1
 from database import Database
 from player import PlayerTable, Player
 from game import GameTable
@@ -16,7 +16,9 @@ class LocalChess:
     def player_list(self):
         players = self.player_table.get_all()
 
-        return Table(*[Tr(Td(player.name), Td(f"{player.elo:.0f}"), Td(A("Stats", href=f"/stats/{player.id}"))) for player in players])
+        players.sort(key=lambda player: player.elo, reverse=True)
+
+        return Table(*[Tr(Td(player.name.capitalize()), Td(f"{player.elo:.0f}"), Td(A("Stats", href=f"/stats/{player.id}"))) for player in players])
 
     def games_list(self):
         games = self.game_table.get_all()
@@ -38,15 +40,14 @@ class LocalChess:
         )
 
     def player_select(self, name: str):
-        return Select(*[Option(player.name, value=player.id) for player in self.player_table.get_all()], name=name),
+        return Select(*[Option(player.name.capitalize(), value=player.id) for player in self.player_table.get_all()], name=name),
 
     # result: 1: white won, -1: black won, 0: remis
     def register_game(self, id_white: int, id_black: int, result: int, add_to_active_tournament: bool) -> bool:
         try:
             elo_white = self.player_table.get_elo(id_white)
             elo_black = self.player_table.get_elo(id_black)
-            # TODO: tournament id
-            active_tournament_id = self.tournament_table.get_active()
+            active_tournament_id = self.tournament_table.get_active_id()
             if active_tournament_id is None or not add_to_active_tournament:
                 elo_white, elo_black = self.game_table.register_game(id_white, id_black, elo_white, elo_black, result, None)
             else:
@@ -69,3 +70,23 @@ class LocalChess:
             result.append((elo, datetime.fromisoformat(game.timestamp_iso).timestamp()))
 
         return result
+
+    def active_tournament_scoreboard(self):
+        active_tournament_id = self.tournament_table.get_active_id()
+        if active_tournament_id is None:
+            return H1("No tournament")
+        games = self.game_table.get_tournament_games(active_tournament_id)
+        scores = {}
+
+        for game in games:
+            white_add = 1 if game.result == 1 else 0.5 if game.result == 0 else 0
+            black_add = 1 if game.result ==-1 else 0.5 if game.result == 0 else 0
+            scores[game.white_id] = scores.get(game.white_id, 0) + white_add
+            scores[game.black_id] = scores.get(game.black_id, 0) + black_add
+
+        player_scores = [(self.player_table[k], v) for k, v in scores.items() if self.player_table[k] is not None]
+        player_scores.sort(key = lambda t: (t[1], t[0].elo), reverse=True) #pyright: ignore
+
+        return Table(
+                *[Tr(Td(f"{player.name.capitalize()}"), Td(f"{score:.1f}"), Td(f"{player.elo:.0f}")) for player, score in player_scores]
+        )

@@ -57,6 +57,13 @@ class TournamentTable:
 
         self.active_tournament = result[0]
         return result[0]
+    
+    def get_active(self) -> Optional[Tournament]:
+        id = self.get_active_id()
+        if id is None:
+            return None
+
+        return self[id]
 
     def add_player_to_active(self, player_id: int):
         if self.active_tournament is None:
@@ -87,6 +94,7 @@ class TournamentTable:
         stmt = """
             UPDATE tournament SET time_end_iso = ?, active = 0 WHERE tournament_id = ?
         """
+        self.active_tournament = None
 
         self.db.sql(stmt, (end_time, active_id))
 

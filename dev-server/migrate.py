@@ -56,3 +56,5 @@ if __name__ == "__main__":
         result = 1 if abs(line.res_white - 1.0) < 1e-6 else -1 if abs(line.res_black - 1.0) < 1e-6 else 0
 
         localchess.game_table.register_game(id_white, id_black, elo_white, elo_black, result, None)
+        localchess.player_table.set_elo(id_white, elo_white)
+        localchess.player_table.set_elo(id_black, elo_black)

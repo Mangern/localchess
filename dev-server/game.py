@@ -112,3 +112,12 @@ class GameTable:
 
         res = self.db.sql(stmt, (player_id, player_id))
         return [Game(*row) for row in res]
+
+    def get_tournament_games(self, tournament_id: int) -> list[Game]:
+        stmt = """
+            SELECT game_id, white_id, black_id, result, elo_white, elo_black, timestamp_iso FROM game WHERE tournament_id = ?
+        """
+
+        res = self.db.sql(stmt, (tournament_id, ))
+
+        return [Game(*row) for row in res]
