@@ -5,6 +5,7 @@ from fasthtml.common import Button, CheckboxX, Fieldset, Input, Label, Main, Not
 from dataclasses import dataclass
 from localchess import LocalChess
 from constants import DEFAULT_ELO
+from io import StringIO
 
 css = Style(':root {--pico-font-size:90%,--pico-font-family: Pacifico, cursive;}')
 
@@ -111,13 +112,12 @@ def get(player_id: int):
     ax.legend(fontsize = 12, framealpha = 0.1)
     fig.suptitle(f"ELO-rating for {player.name.capitalize()}", fontweight = "bold")
 
-    plt.savefig("tmp.svg")
-    with open("tmp.svg") as f:
-        svg_txt = f.read()
+    imgdata = StringIO()
 
-    os.remove("tmp.svg")
+    plt.savefig(imgdata, format="svg")
+    imgdata.seek(0)
 
-    return Div(H1(f"Stats for {player.name}"), NotStr(svg_txt))
+    return Div(H1(f"Stats for {player.name.capitalize()}"), NotStr(imgdata.read()))
 
 @rt("/tournament_start")
 def post(tournament_name: str):
