@@ -1,4 +1,4 @@
-This is the 
+This is the repo for maintaining elo ratings.
 To run
 
 ```
