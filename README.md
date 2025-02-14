@@ -1,4 +1,5 @@
-This is the repo for maintaining elo ratings.
+This is the repo for maintaining elo ratings. Tournaments can be hosted.
+
 To run
 
 ```
