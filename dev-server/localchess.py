@@ -4,6 +4,8 @@ from database import Database
 from player import PlayerTable, Player
 from game import GameTable
 from tournament import TournamentTable, TournamentPlayerTable
+from itertools import product
+import random
 
 class LocalChess:
     def __init__(self):
@@ -86,7 +88,54 @@ class LocalChess:
 
         player_scores = [(self.player_table[k], v) for k, v in scores.items() if self.player_table[k] is not None]
         player_scores.sort(key = lambda t: (t[1], t[0].elo), reverse=True) #pyright: ignore
-
         return Table(
-                *[Tr(Td(f"{player.name.capitalize()}"), Td(f"{score:.1f}"), Td(f"{player.elo:.0f}")) for player, score in player_scores]
+                *[Tr(Td(A(f"{player.name.capitalize()}", href=f"/stats/{player.id}")), Td(f"{score:.1f}"), Td(f"{player.elo:.0f}")) for player, score in player_scores]
         )
+
+    def get_next_game(self):
+        """
+        Returns tuple (id_white, id_black) as a suggestion for the next game to play.
+        """
+        games = self.game_table.get_all()
+        games.sort(key=lambda game: datetime.fromisoformat(game.timestamp_iso).timestamp(), reverse=True)
+
+        active_player_ids: set[int] = []
+
+        if self.tournament_table.get_active_id():
+            games = self.game_table.get_tournament_games(self.tournament_table.get_active_id())
+            active_player_ids = set(game.white_id for game in games) | set(game.black_id for game in games)
+        else:
+            active_player_ids = set(player.id for player in self.player_table.get_all())
+
+        games = [g for g in games if g.white_id in active_player_ids and g.black_id in active_player_ids]
+
+        player_pairs = set((min(id1, id2), max(id1, id2)) for id1, id2 in product(active_player_ids, active_player_ids) if id1 != id2)
+
+        for g in games[:2]:
+            player_pairs.remove((min(g.white_id, g.black_id), max(g.white_id, g.black_id)))
+
+        if not player_pairs:
+            if not games:
+                assert False, "No players!!!"
+            game = games[:2][-1]
+            return (game.black_id, game.white_id)
+
+        player1, player2 = random.choice(list(player_pairs))
+
+        player1_counts = [0, 0]
+        player2_counts = [0, 0]
+        for game in games:
+            if game.white_id == player1:
+                player1_counts[0] += 1
+            if game.black_id == player1:
+                player1_counts[1] += 1
+            if game.white_id == player2:
+                player2_counts[0] += 1
+            if game.black_id == player2:
+                player2_counts[1] += 1
+        
+        # Player with lowest white count gets white
+        if player1_counts[0] > player2_counts[0] or (player1_counts[0] == player2_counts[0] and random.randint(1,2)==1):
+            player1, player2 = player2, player1
+
+        return player1, player2
