@@ -1,7 +1,7 @@
 import os
 from threading import local
 from time import time
-from fasthtml.common import Button, CheckboxX, Fieldset, Input, Label, Main, NotStr, Option, Redirect, Script, Select, Style, fast_app, Div, P, picolink, serve, H1, A, Form, H2
+from fasthtml.common import Button, CheckboxX, Fieldset, Input, Label, Main, NotStr, Option, Redirect, Script, Select, Style, fast_app, Div, P, picolink, serve, H1, H3, A, Form, H2
 from dataclasses import dataclass
 from localchess import LocalChess
 from constants import DEFAULT_ELO
@@ -76,6 +76,8 @@ def post(player_white: int, player_black: int, result: int, add_to_active: bool 
         return Redirect(f"/{redir_to}?error=Failed+to+register+game")
     return Redirect(f"/{redir_to}")
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -134,7 +136,9 @@ def get():
     active_tournament = localchess.tournament_table.get_active()
     if active_tournament is None:
         return Redirect("/")
+    next_white, next_black = localchess.get_next_game()
     return Main(
+        A("Home", href="/"),
         H1(f"{active_tournament.name}"),
         localchess.active_tournament_scoreboard(),
         Form(
@@ -148,6 +152,10 @@ def get():
             ),
             action="/register_game", method="post",
             cls="row"
+        ),
+        Div(
+            H3("Next game"),
+            P(f"White: {localchess.player_table[next_white].name}, Black: {localchess.player_table[next_black].name}")
         ),
         NotStr("<br>"),
         Form(
