@@ -94,6 +94,8 @@ def get(player_id: int):
     game_num = list(range(len(score_hist)))
 
     fig, ax = plt.subplots(figsize = (8, 6), facecolor = "teal")
+    game_num = [-1, *game_num]
+    score_hist = [1200, *score_hist]
     ax.plot(game_num, score_hist,
             color = "magenta",
             label = f"{player.name.capitalize()}' ELO-rating over time")
@@ -136,7 +138,7 @@ def get():
     active_tournament = localchess.tournament_table.get_active()
     if active_tournament is None:
         return Redirect("/")
-    next_white, next_black = localchess.get_next_game()
+    next_games = localchess.get_next_game(2)
     return Main(
         A("Home", href="/"),
         H1(f"{active_tournament.name}"),
@@ -153,10 +155,11 @@ def get():
             action="/register_game", method="post",
             cls="row"
         ),
-        Div(
+        *[
+            Div(
             H3("Next game"),
             P(f"White: {localchess.player_table[next_white].name}, Black: {localchess.player_table[next_black].name}")
-        ),
+        ) for next_white, next_black in next_games],
         NotStr("<br>"),
         Form(
             Button("End tournament"),

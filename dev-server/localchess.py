@@ -92,9 +92,9 @@ class LocalChess:
                 *[Tr(Td(A(f"{player.name.capitalize()}", href=f"/stats/{player.id}")), Td(f"{score:.1f}"), Td(f"{player.elo:.0f}")) for player, score in player_scores]
         )
 
-    def get_next_game(self):
+    def get_next_game(self, num_games = 1):
         """
-        Returns tuple (id_white, id_black) as a suggestion for the next game to play.
+        Returns list of tuples [(id_white, id_black)] as a suggestion for the next games to play.
         """
         games = self.game_table.get_all()
         games.sort(key=lambda game: datetime.fromisoformat(game.timestamp_iso).timestamp(), reverse=True)
@@ -120,8 +120,19 @@ class LocalChess:
             game = games[:2][-1]
             return (game.black_id, game.white_id)
 
-        player1, player2 = random.choice(list(player_pairs))
 
+        ret = []
+        for _ in range(num_games):
+            player1, player2 = random.choice(list(player_pairs))
+
+            player1, player2 = self.get_player_order(player1, player2, games)
+            ret.append((player1, player2))
+
+            player_pairs = [(a, b) for (a, b) in player_pairs if a not in (player1, player2) and b not in (player1, player2)]
+
+        return ret
+
+    def get_player_order(self, player1, player2, games):
         player1_counts = [0, 0]
         player2_counts = [0, 0]
         for game in games:
