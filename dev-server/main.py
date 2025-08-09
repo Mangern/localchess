@@ -12,6 +12,7 @@ app, rt = fast_app(hdrs=(picolink, css))
 localchess = LocalChess()
 
 def home(error: str):
+    next_games = localchess.get_next_game(1)
     return Main(
         H1("Localchess"), 
         tournament_view(),
@@ -37,6 +38,11 @@ def home(error: str):
             action="/register_game", method="post",
             cls="row"
         ),
+        *[
+            Div(
+            H3("Next game"),
+            P(f"White: {localchess.player_table[next_white].name}, Black: {localchess.player_table[next_black].name}")
+        ) for next_white, next_black in next_games],
         H2("Recent games"),
         localchess.games_list(),
         Script("window.history.replaceState({}, document.title, '/')"),
@@ -88,6 +94,7 @@ def get(player_id: int):
         return Redirect("/")
 
     elo_hist = localchess.player_elo_history(player_id)
+    (best, bw, bd, bl), (worst, ww, wd, wl) = localchess.get_best_worst_opponent(player_id)
 
     score_hist, times = zip(*elo_hist)
 
@@ -121,7 +128,12 @@ def get(player_id: int):
 
     os.remove("tmp.svg")
 
-    return Div(H1(f"Stats for {player.name}"), NotStr(svg_txt))
+    return Div(
+        H1(f"Stats for {player.name}"), 
+        NotStr(svg_txt),
+        P(f"Best opponent: {best.name} ({bw} wins, {bd} draws and {bl} losses)"),
+        P(f"Worst opponent: {worst.name} ({ww} wins, {wd} draws and {wl} losses)"),
+    )
 
 @rt("/tournament_start")
 def post(tournament_name: str):
@@ -138,7 +150,7 @@ def get():
     active_tournament = localchess.tournament_table.get_active()
     if active_tournament is None:
         return Redirect("/")
-    next_games = localchess.get_next_game(2)
+    next_games = localchess.get_next_game(1)
     return Main(
         A("Home", href="/"),
         H1(f"{active_tournament.name}"),

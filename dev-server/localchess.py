@@ -73,6 +73,47 @@ class LocalChess:
 
         return result
 
+    def get_best_worst_opponent(self, player_id) -> tuple[tuple[Player, int, int, int], tuple[Player, int, int, int]]:
+        games = self.game_table.games_of_player(player_id)
+        points: dict[int, int] = {}
+        wins: dict[int, int] = {}
+        draws: dict[int, int] = {}
+        losses: dict[int, int] = {}
+
+        for game in games:
+            pt = 0
+            if player_id == game.white_id:
+                if game.result == 1:
+                    points[game.black_id] = points.get(game.black_id, 0) + 1
+                    wins[game.black_id] = wins.get(game.black_id, 0) + 1
+                elif game.result == -1:
+                    points[game.black_id] = points.get(game.black_id, 0) - 1
+                    losses[game.black_id] = losses.get(game.black_id, 0) + 1
+                else:
+                    draws[game.black_id] = draws.get(game.black_id, 0) + 1
+            else:
+                if game.result == -1:
+                    points[game.white_id] = points.get(game.white_id, 0) + 1
+                    wins[game.white_id] = wins.get(game.white_id, 0) + 1
+                elif game.result == 1:
+                    points[game.white_id] = points.get(game.white_id, 0) - 1
+                    losses[game.white_id] = losses.get(game.white_id, 0) + 1
+                else:
+                    draws[game.white_id] = draws.get(game.white_id, 0) + 1
+
+        best_id = max(points.keys(), key=lambda k: points[k])
+        worst_id = min(points.keys(), key=lambda k: points[k])
+
+        best = self.player_table[best_id]
+        worst = self.player_table[worst_id]
+        assert best is not None
+        assert worst is not None
+        return (
+            (best, wins.get(best_id, 0), draws.get(best_id, 0), losses.get(best_id, 0)), 
+            (worst, wins.get(worst_id, 0), draws.get(worst_id, 0), losses.get(worst_id, 0))
+        )
+
+
     def active_tournament_scoreboard(self):
         active_tournament_id = self.tournament_table.get_active_id()
         if active_tournament_id is None:
@@ -99,10 +140,11 @@ class LocalChess:
         games = self.game_table.get_all()
         games.sort(key=lambda game: datetime.fromisoformat(game.timestamp_iso).timestamp(), reverse=True)
 
-        active_player_ids: set[int] = []
+        active_player_ids: set[int]
+        active_tournament_id = self.tournament_table.get_active_id()
 
-        if self.tournament_table.get_active_id():
-            games = self.game_table.get_tournament_games(self.tournament_table.get_active_id())
+        if active_tournament_id is not None:
+            games = self.game_table.get_tournament_games(active_tournament_id)
             active_player_ids = set(game.white_id for game in games) | set(game.black_id for game in games)
         else:
             active_player_ids = set(player.id for player in self.player_table.get_all())
@@ -111,14 +153,23 @@ class LocalChess:
 
         player_pairs = set((min(id1, id2), max(id1, id2)) for id1, id2 in product(active_player_ids, active_player_ids) if id1 != id2)
 
-        for g in games[:2]:
-            player_pairs.remove((min(g.white_id, g.black_id), max(g.white_id, g.black_id)))
+        it = 0
+        for g in games[::-1]:
+            # WTF :(
+            if it == 2:
+                break
+            pair = (min(g.white_id, g.black_id), max(g.white_id, g.black_id))
+            if pair in player_pairs:
+                player_pairs.remove((min(g.white_id, g.black_id), max(g.white_id, g.black_id)))
+            else:
+                continue
+            it += 1
 
         if not player_pairs:
             if not games:
-                assert False, "No players!!!"
+                return []
             game = games[:2][-1]
-            return (game.black_id, game.white_id)
+            return [(game.black_id, game.white_id)]
 
 
         ret = []
