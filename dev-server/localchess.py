@@ -154,7 +154,7 @@ class LocalChess:
         player_pairs = set((min(id1, id2), max(id1, id2)) for id1, id2 in product(active_player_ids, active_player_ids) if id1 != id2)
 
         it = 0
-        for g in games[::-1]:
+        for g in games:
             # WTF :(
             if it == 2:
                 break
